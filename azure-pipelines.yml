@@ -19,7 +19,7 @@ stages:
         cd /build;
         apt-get -y update;
         apt-get -y install python3.7 cython3 g++ cmake;
-        cmake ../renderdoc;
+        cmake ../;
         make"
       displayName: Linux Build
   - job: macOSBuild
@@ -40,7 +40,7 @@ stages:
     - script: |
         mkdir -p build
         cd build
-        cmake ../renderdoc
+        cmake ../
         make
       displayName: MacOS Build
   - job: windowsBuild
