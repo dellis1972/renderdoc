@@ -1,0 +1,60 @@
+trigger:
+- master
+stages:
+- stage: build
+  displayName: Build
+  jobs:
+  - job: linuxBuild
+    displayName: Linux Build
+    pool:
+      vmImage: ubuntu-18.04
+    steps:
+    - script: >-
+        docker run -v $PWD:/build ubuntu:rolling /bin/bash -c "
+        cd /build;
+        apt-get -y update;
+        apt-get -y install python3.7 cython3 g++ cmake;
+        cmake ../renderdoc;
+        make"
+      displayName: Linux Build
+  - job: macOSBuild
+    displayName: MacOS Build
+    pool:
+      vmImage: macOS-10.14
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Set Python Version'
+      inputs:
+        versionSpec: '3.7'
+        addToPath: true
+        architecture: 'x64'
+    - script: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install Cython --install-option="--no-cython-compile"
+      displayName: 'Install Cython'
+    - script: |
+        cd build
+        cmake ../renderdoc
+        make
+      displayName: MacOS Build
+  - job: windowsBuild
+    displayName: Windows Build
+    pool:
+      vmImage: windows-2019
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Set Python Version'
+      inputs:
+        versionSpec: '3.7'
+        addToPath: true
+        architecture: 'x64'
+    - script: |
+        python -m pip install --upgrade pip setuptools wheel
+        pip install Cython --install-option="--no-cython-compile"
+      displayName: 'Install Cython'
+    - script: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+      env:
+        DISTUTILS_USE_SDK: 1
+        PY_VCRUNTIME_REDIST: No
+      displayName: Build Windows
