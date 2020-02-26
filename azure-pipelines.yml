@@ -19,8 +19,8 @@ stages:
         cd /build;
         apt-get -y update;
         apt-get -y install python3.7 cython3 g++ cmake;
-        cmake ../;
-        make"
+        cmake -DCMAKE_BUILD_TYPE=Release ..;
+        make -j2"
       displayName: Linux Build
   - job: macOSBuild
     displayName: MacOS Build
@@ -36,12 +36,15 @@ stages:
     - script: |
         python -m pip install --upgrade pip setuptools wheel
         pip install Cython --install-option="--no-cython-compile"
+        brew update
+        brew install qt5 lftp
+        brew link qt5 --force
       displayName: 'Install Cython'
     - script: |
         mkdir -p build
         cd build
-        cmake ../
-        make
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+        make -j2
       displayName: MacOS Build
   - job: windowsBuild
     displayName: Windows Build
