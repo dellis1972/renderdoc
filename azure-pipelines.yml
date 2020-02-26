@@ -14,6 +14,7 @@ stages:
     steps:
     - script: >-
         docker run -v $PWD:/build ubuntu:rolling /bin/bash -c "
+        mkdir -p build
         cd /build;
         apt-get -y update;
         apt-get -y install python3.7 cython3 g++ cmake;
@@ -36,6 +37,7 @@ stages:
         pip install Cython --install-option="--no-cython-compile"
       displayName: 'Install Cython'
     - script: |
+        mkdir -p build
         cd build
         cmake ../renderdoc
         make
