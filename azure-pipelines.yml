@@ -49,7 +49,7 @@ stages:
   - job: windowsBuild
     displayName: Windows Build
     pool:
-      vmImage: windows-2019
+      vmImage: windows-2017
     steps:
     - task: UsePythonVersion@0
       displayName: 'Set Python Version'
@@ -62,7 +62,8 @@ stages:
         pip install Cython --install-option="--no-cython-compile"
       displayName: 'Install Cython'
     - script: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+        msbuild renderdoc.sln /v:m "/p:Configuration=Release" "/p:Platform=x64" "/p:PlatformToolset=v141"
       env:
         DISTUTILS_USE_SDK: 1
         PY_VCRUNTIME_REDIST: No
