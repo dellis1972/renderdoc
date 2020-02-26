@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
       - master
+      - buildonazure
       - refs/tags/*
 stages:
 - stage: build
