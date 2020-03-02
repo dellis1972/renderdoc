@@ -17,7 +17,7 @@ stages:
         mkdir -p build
         cd build
         apt-get -y update
-        apt-get -y install python3.7 cython3 g++ cmake
+        apt-get -y install python3.7 cython3 g++ cmake libx11-dev mesa-common-dev libgl1-mesa-dev qt56base qt56svg qt56x11extras libxcb-keysyms1-dev gdb clang-format-3.8 g++-6
         cmake -DCMAKE_BUILD_TYPE=Release ..
         make -j2
       displayName: Linux Build
@@ -36,7 +36,7 @@ stages:
         python -m pip install --upgrade pip setuptools wheel
         pip install Cython --install-option="--no-cython-compile"
         brew update
-        brew install qt5 lftp
+        brew install qt5 lftp autotools
         brew link qt5 --force
       displayName: 'Install Cython'
     - script: |
