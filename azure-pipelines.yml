@@ -46,7 +46,9 @@ stages:
         versionSpec: '3.7'
         addToPath: true
         architecture: 'x64'
+      name: python3
     - script: |
+        python --version
         python -m pip install --upgrade pip setuptools wheel
         pip install Cython --install-option="--no-cython-compile"
         brew update
@@ -59,6 +61,21 @@ stages:
         cmake -DCMAKE_BUILD_TYPE=Release ..
         make -j2
       displayName: MacOS Build
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: 'lib/pymodules/*.pyd'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: 'lib/*.dylib'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: PublishBuildArtifacts@1
+      displayName: upload artifacts
+      inputs:
+        artifactName: 'mac_python_$(desiredPythonVersion)'
+        pathtoPublish: $(Build.ArtifactStagingDirectory)
   - job: windowsBuild
     displayName: Windows Build
     strategy:
