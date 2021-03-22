@@ -58,7 +58,7 @@ stages:
     - script: |
         mkdir -p build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ..
+        cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PYRENDERDOC=ON -DENABLE_GL=ON -DENABLE_QRENDERDOC=ON ..
         make -j2
       displayName: MacOS Build
     - task: CopyFiles@2
