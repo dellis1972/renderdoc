@@ -37,13 +37,23 @@ stages:
   #     displayName: Linux Build
   - job: macOSBuild
     displayName: MacOS Build
+    strategy:
+      matrix:
+        Python37:
+          desiredPythonVersion: '3.7'
+          pythonlib: 'python37.lib'
+          pythonzip: 'python37.zip'
+        Python39:
+          desiredPythonVersion: '3.9'
+          pythonlib: 'python39.lib'
+          pythonzip: 'python39.zip'
     pool:
       vmImage: macOS-10.14
     steps:
     - task: UsePythonVersion@0
       displayName: 'Set Python Version'
       inputs:
-        versionSpec: '3.7'
+        versionSpec: $(desiredPythonVersion)
         addToPath: true
         architecture: 'x64'
       name: python3
