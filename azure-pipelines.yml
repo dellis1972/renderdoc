@@ -68,7 +68,7 @@ stages:
     - script: |
         mkdir -p build
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PYRENDERDOC=ON -DENABLE_GL=ON -DENABLE_QRENDERDOC=OFF -DPython_FIND_FRAMEWORK=Last -DPython_ROOT_DIR=$(python3.pythonLocation) ..
+        cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PYRENDERDOC=ON -DENABLE_GL=ON -DENABLE_QRENDERDOC=OFF -DPython_FIND_FRAMEWORK=LAST -DPython_FIND_STRATEGY=LOCATION -DPython_ROOT_DIR=$(python3.pythonLocation) ..
         make -j2
       displayName: MacOS Build
     - task: CopyFiles@2
