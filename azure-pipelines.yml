@@ -1,0 +1,177 @@
+trigger:
+  branches:
+    include:
+      - master
+      - buildonazure
+      - refs/tags/*
+stages:
+- stage: build
+  displayName: Build
+  jobs:
+  # - job: linuxBuild
+  #   displayName: Linux Build
+  #   pool:
+  #     vmImage: ubuntu-18.04
+  #   steps:
+  #   - task: UsePythonVersion@0
+  #     displayName: 'Set Python Version'
+  #     inputs:
+  #       versionSpec: '3.7.7'
+  #       addToPath: true
+  #       architecture: 'x64'
+  #   - script: |
+  #       wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+  #       sudo add-apt-repository -y 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-3.8 main'
+  #     displayName: Add LLVM
+  #   - script: |
+  #       sudo apt-get update -qq
+  #       sudo apt-get install -y -qq libx11-dev mesa-common-dev libgl1-mesa-dev qtbase5-dev libqt5svg5-dev libqt5x11extras5-dev libxcb-keysyms1-dev clang++-3.8 g++-5
+  #       sudo apt-get -y install python3.7 cython3 python3-pip
+  #     displayName: Install compilation dependencies
+  #   - script: |
+  #       mkdir -p build
+  #       cd build
+  #       pip3 install Sphinx
+  #       cmake -DCMAKE_BUILD_TYPE=Release ..
+  #       make -j2 -C build
+  #     displayName: Linux Build
+  - job: macOSBuild
+    displayName: MacOS Build
+    strategy:
+      matrix:
+        Python37:
+          desiredPythonVersion: '3.7'
+          pythonlib: 'python37.lib'
+          pythonzip: 'python37.zip'
+        Python39:
+          desiredPythonVersion: '3.9'
+          pythonlib: 'python39.lib'
+          pythonzip: 'python39.zip'
+    pool:
+      vmImage: macOS-10.14
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Set Python Version'
+      inputs:
+        versionSpec: $(desiredPythonVersion)
+        addToPath: true
+        architecture: 'x64'
+      name: python3
+    - script: |
+        python --version
+        python -m pip install --upgrade pip setuptools wheel
+        pip install Cython --install-option="--no-cython-compile"
+        brew update
+        brew install qt5 lftp autoconf automake
+        brew link qt5 --force
+      displayName: 'Install Cython'
+    - script: |
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_PYRENDERDOC=ON -DENABLE_GL=ON -DENABLE_QRENDERDOC=OFF -DPYTHON_LIBRARY=$(python3.pythonLocation)/lib -DPYTHON_INCLUDE_DIR=$(python3.pythonLocation)/include -DPYTHON_EXECUTABLE=$(python3.pythonLocation)/python ..
+        make -j2
+      displayName: MacOS Build
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: 'build/lib/*.so'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: 'build/lib/*.dylib'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: PublishBuildArtifacts@1
+      displayName: upload artifacts
+      inputs:
+        artifactName: 'mac_python_$(desiredPythonVersion)'
+        pathtoPublish: $(Build.ArtifactStagingDirectory)
+  - job: windowsBuild
+    displayName: Windows Build
+    strategy:
+      matrix:
+        Python37:
+          desiredPythonVersion: '3.7'
+          pythonlib: 'python37.lib'
+          pythonzip: 'python37.zip'
+        Python39:
+          desiredPythonVersion: '3.9'
+          pythonlib: 'python39.lib'
+          pythonzip: 'python39.zip'
+    pool:
+      vmImage: vs2017-win2016
+    workspace:
+      clean: all
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Set Python Version'
+      inputs:
+        versionSpec: $(desiredPythonVersion)
+        addToPath: true
+        architecture: 'x64'
+      name: python3
+    - script: |
+        python --version
+        python -c "import sys;import os; print(os.path.dirname(os.path.abspath(sys.executable)));"
+        python -m pip install --upgrade pip setuptools wheel
+        pip install Cython --install-option="--no-cython-compile"
+      displayName: 'Install Cython'
+    - task: CopyFiles@2
+      displayName: Copy python dev files
+      inputs:
+        sourceFolder: '$(python3.pythonLocation)\libs'
+        contents: '*.*'
+        targetFolder: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)\libs'
+    - task: CopyFiles@2
+      displayName: Copy python dev files
+      inputs:
+        sourceFolder: '$(python3.pythonLocation)'
+        contents: '*.dll'
+        targetFolder: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)'
+    - task: CopyFiles@2
+      displayName: Copy python dev files
+      inputs:
+        sourceFolder: '$(python3.pythonLocation)\include\'
+        contents: '**\*.h'
+        targetFolder: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)\include'
+    - task: CopyFiles@2
+      displayName: Copy python dev files
+      inputs:
+        sourceFolder: '$(python3.pythonLocation)\Lib\'
+        contents: '**\*.pyc'
+        targetFolder: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)\Lib'
+    - task: ArchiveFiles@2
+      inputs:
+          rootFolderOrFile: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)\Lib'
+          includeRootFolder: false
+          archiveFile: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)\$(pythonzip)'
+          verbose: true
+      displayName: Create $(pythonzip)
+    - script: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+        msbuild renderdoc.sln /v:m /bl "/p:Configuration=Release" "/p:Platform=x64" "/p:PlatformToolset=v141"
+      env:
+        DISTUTILS_USE_SDK: 1
+        PY_VCRUNTIME_REDIST: No
+        RENDERDOC_PYTHON_PREFIX64: '$(Agent.BuildDirectory)\python_$(desiredPythonVersion)'
+      displayName: Build Windows
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: '*.binlog'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: 'x64\Release\pymodules\*.pyd'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: CopyFiles@2
+      displayName: Copy output
+      inputs:
+        contents: 'x64\Release\*.dll'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+    - task: PublishBuildArtifacts@1
+      displayName: upload artifacts
+      inputs:
+        artifactName: 'python_$(desiredPythonVersion)'
+        pathtoPublish: $(Build.ArtifactStagingDirectory)
